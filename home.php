@@ -12,7 +12,16 @@ $uid = $_SESSION['user'];
 $res=mysql_query("SELECT * FROM users WHERE user_id=".$uid);
 $userRow=mysql_fetch_array($res);
 
-echo "user_id:" + $userRow['user_name'];
+//$popu=mysql_query("SELECT * FROM users WHERE user_id=".$uid);
+//$popl = mysql_fetch_array($popu);
+//echo $popu;
+
+//$populr= mysql_fetch_assoc($popu);
+//$populra = $populr["user_popularity"];
+//echo $populra;
+
+
+//echo "user_id:" + $userRow['user_name'];
 
 $album_qry = "SELECT * FROM albums WHERE user_id=".$uid;
 $album_res=mysql_query($album_qry);
@@ -22,7 +31,7 @@ $album_res=mysql_query($album_qry);
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>Welcome - <?php echo $userRow['user_email']; ?></title>
+<title>Welcome - <?php echo $userRow['user_name'].' - '.$userRow['user_genre']; ?></title>
 <link rel="stylesheet" href="style.css" type="text/css" />
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
@@ -93,10 +102,10 @@ $album_res=mysql_query($album_qry);
             }
         }
     ?>
-    <table width="80%" border="1" >
+    <table style="width:80%" border="1" >
     <tr>
-    <th colspan="4"> your albums </th>
-</tr>
+        <th colspan="6"> your albums </th>
+    </tr>
 <tr>
     <td>Album name</td>
     <td>Label</td>
@@ -104,7 +113,7 @@ $album_res=mysql_query($album_qry);
     <td>Genre</td>
     <td>View tracks</td>
     <td>Popularity</td>
-</tr>
+    </tr>
 <?php
 
 $k= $userRow['user_name'];
@@ -118,7 +127,22 @@ while ($album_row = mysql_fetch_assoc($album_res)) {
     echo    '<td>'.$album_row["release_date"].'</td>';
     echo    '<td>'.$album_row["genre"].'</td>';
     echo    '<td><a href="viewtracks.php?album='.$alb_name.'">View</a></td>';
-    echo    '<td></td>';
+     //echo    '<td>'.$album_row["user_popularity"].'</td>';
+
+    // Get Album popularity from Suman likes ->
+
+    $url_alb_popu = 'http://107.22.128.64/api2.php?src='.$album_row["album_id"];
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url_alb_popu);
+    curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
+    $content_alb_popu=curl_exec($ch);
+    curl_close($ch);
+
+    $json_alb_popu = json_decode($content_alb_popu, true);
+
+
+    echo    '<td>'.$json_alb_popu['count'].'</td>';
     echo '</tr>';
 
 }

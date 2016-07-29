@@ -7,7 +7,7 @@ if(!isset($_SESSION['user']))
 
 include_once 'dbconnect.php';
 
-$url = 'http://ws.audioscrobbler.com/2.0/?method=artist.gettopalbums&artist=taylorswift&api_key=7a5ea6e06238400dc41bc7087c07cee3&format=json';
+//$url = 'http://ws.audioscrobbler.com/2.0/?method=artist.gettopalbums&artist=taylorswift&api_key=7a5ea6e06238400dc41bc7087c07cee3&format=json';
 
 $uname=$_SESSION['user-name'];
 
@@ -54,71 +54,75 @@ else
 {
     foreach ($albumss as $key => $album)
     {
-        $albnm = $album[name];
-        $alburl = $album[url];
+        if (isset($album)) {
+        
+            $albnm = $album[name];
+            $alburl = $album[url];
 
-        $url_alb_info = 'http://ws.audioscrobbler.com/2.0/?method=album.getinfo&artist='.$uname.'&album='.$albnm.'&api_key=7a5ea6e06238400dc41bc7087c07cee3&format=json';
-
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url_alb_info);
-        curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
-        $content_alb_info=curl_exec($ch);
-        curl_close($ch);
+            $url_alb_info = 'http://ws.audioscrobbler.com/2.0/?method=album.getinfo&artist='.$uname.'&album='.$albnm.'&api_key=7a5ea6e06238400dc41bc7087c07cee3&format=json';
 
 
-        $json_alb_info = json_decode($content_alb_info, true);
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url_alb_info);
+            curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
+            $content_alb_info=curl_exec($ch);
+            curl_close($ch);
 
-        $alb_obj = $json_alb_info['album'];
 
-        $albrd = $alb_obj['wiki']['published'];
-        $arr_albtracks = $alb_obj['tracks'];
+            $json_alb_info = json_decode($content_alb_info, true);
 
-        //$album_count = count($album_row);
+            $alb_obj = $json_alb_info['album'];
 
-        // check if album exist
-        $alb_qry = "SELECT COUNT(album_id) as total FROM albums WHERE album_name='".$albnm."' AND user_id=".$usid;
-        $alb_exec = mysql_query($alb_qry);
+            $albrd = $alb_obj['wiki']['published'];
+            $arr_albtracks = $alb_obj['tracks'];
 
-        if ($alb_exec) {
-            
-            $get_alb = mysql_fetch_assoc($alb_exec);
-            if($get_alb['total'] > 0)
-            {
-                echo "Album already exist - ".$albnm."<br>";
-            }
-            else
-            {
-                if(mysql_query("INSERT INTO albums(album_name,user_id,release_date) VALUES ('$albnm',$usid,'$albrd')"))
+            //$album_count = count($album_row);
+
+            // check if album exist
+            $alb_qry = "SELECT COUNT(album_id) as total FROM albums WHERE album_name='".$albnm."' AND user_id=".$usid;
+            $alb_exec = mysql_query($alb_qry);
+
+            if ($alb_exec) {
+                
+                $get_alb = mysql_fetch_assoc($alb_exec);
+                if($get_alb['total'] > 0)
                 {
-                    //echo "<script>alert('uploaded successfully');</script>";
-                    echo "album uploaded - ".$albnm;                
+                    echo "".$albnm."<br>";
+                }
+                else
+                {
+                    if(mysql_query("INSERT INTO albums(album_name,user_id,release_date) VALUES ('$albnm',$usid,'$albrd')"))
+                    {
+                        //echo "<script>alert('uploaded successfully');</script>";
+                        echo "album uploaded - ".$albnm;                
 
-                    // Get album_id
-                    $albumid_qry="SELECT * FROM albums WHERE album_name='$albnm' AND user_id='$usid'";
-                    $exec_albumid_qry= mysql_query($albumid_qry);
-                    $row=mysql_fetch_assoc($exec_albumid_qry);
+                        // Get album_id
+                        $albumid_qry="SELECT * FROM albums WHERE album_name='$albnm' AND user_id='$usid'";
+                        $exec_albumid_qry= mysql_query($albumid_qry);
+                        $row=mysql_fetch_assoc($exec_albumid_qry);
 
-                    $albid = $row['album_id'];
+                        $albid = $row['album_id'];
 
-                    $arr_albtracks = $json_alb_info['album']['tracks']['track'];
-                    foreach ($arr_albtracks as $key => $track) {
-                        // Upload tracks
-                        $trk_name = $track['name'];
-                        $trk_url = $track['url'];
-                        $trk_singer = $track['artist']['name'];
-
-                        if(mysql_query("INSERT INTO tracks(track_name, singers, hyperlink, user_id, album_id) VALUES ('$trk_name', '$trk_singer', '$trk_url', $usid, $albid)"))
+                        $arr_albtracks = $json_alb_info['album']['tracks']['track'];
+                        foreach($arr_albtracks as $key => $track) 
                         {
-                            echo "----track uploaded - ".$trk_name;
-                        }    
-                    }                
+                            // Upload tracks
+                            $trk_name = $track['name'];
+                            $trk_url = $track['url'];
+                            $trk_singer = $track['artist']['name'];
+
+                            if(mysql_query("INSERT INTO tracks(track_name, singers, hyperlink, user_id, album_id) VALUES ('$trk_name', '$trk_singer', '$trk_url', $usid, $albid)"))
+                            {
+                                echo "----track uploaded - ".$trk_name;
+                            }    
+                        }                
+                    }
                 }
             }
-        }
-        else {
-            // alb_exec error
-            echo "error in album exec...<br>";
+            else {
+                // alb_exec error
+                echo "error in album exec...<br>";
+            }
         }
     }
 }
